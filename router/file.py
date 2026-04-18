@@ -1,39 +1,31 @@
-
-
-from fastapi import APIRouter, UploadFile, File,Request
-import shutil, os
+from fastapi import APIRouter, UploadFile, File
+import cloudinary
+import cloudinary.uploader
+import os
 
 router = APIRouter(
     prefix="/files",
     tags=["files"]
 )
 
-# Ensure folder exists
-os.makedirs("media/products", exist_ok=True)
+# Configure Cloudinary (uses env variables from Render)
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("API_KEY"),
+    api_secret=os.getenv("API_SECRET")
+)
 
+# Upload API
 @router.post("/uploadfile")
-def upload_file(request:Request,upload_file: UploadFile = File(...)):
-    filename = upload_file.filename
-    path = f"media/products/{filename}"
+async def upload_file(upload_file: UploadFile = File(...)):
+    try:
+        result = cloudinary.uploader.upload(upload_file.file)
 
-    with open(path, "wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
+        return {
+            "image_url": result["secure_url"]
+        }
 
-    # URL saved in DB
-    # image_url = f"/media/products/{filename}"
-    # return {"image_url": image_url}
-    image_url = str(request.base_url) + f"media/products/{filename}"
-    return {"image_url": image_url}
-
-
-@router.get("/hero-image")
-def get_hero_image(request: Request):
-    HERO_IMAGE_NAME = "hero.webp"
-    path = f"media/products/{HERO_IMAGE_NAME}"
-
-    if not os.path.exists(path):
-        return {"detail": "Hero image not found"}
-
-    image_url = str(request.base_url) + f"media/products/{HERO_IMAGE_NAME}"
-    return {"image_url": image_url}    
-
+    except Exception as e:
+        return {
+            "error": str(e)
+        }
