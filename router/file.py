@@ -29,3 +29,9 @@ async def upload_file(upload_file: UploadFile = File(...)):
         return {
             "error": str(e)
         }
+
+@router.get("/hero-image")
+def get_hero_image():
+    return {
+        "image_url": "https://res.cloudinary.com/dxteztqg2/image/upload/v1776408670/qqdfdeyjuu7qcgtkth2f.jpg"
+    }
